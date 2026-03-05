@@ -1,18 +1,17 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
+
 <BaseLayout title="账号确认/登录">
   <div class="surface pad">
     <h1 class="page-title">账号确认 / 登录</h1>
     <p class="subtle">
-      这个页面用于处理 Netlify Identity 的邀请/邮箱确认/设置密码（只给管理员用）。完成后再去
-      <code class="inline">/admin/</code> 登录 Decap CMS。
+      这个页面用于处理 Netlify Identity 的邀请/邮箱确认/设置密码（只给管理员用）。
+      完成后再去 <code class="inline">/admin/</code> 登录 Decap CMS。
     </p>
 
-    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
-
     <div style="height:12px;"></div>
-    <button class="btn" type="button" onclick="netlifyIdentity.open()">打开登录窗口</button>
+    <button class="btn" id="openIdentity" type="button">打开登录窗口</button>
 
     <div style="height:10px;"></div>
     <div class="subtle" style="font-size:12px;">
@@ -21,4 +20,26 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <code class="inline">/login/#invite_token=...</code>，这样弹窗才能正确完成确认/设置密码。
     </div>
   </div>
+
+  <!-- IMPORTANT:
+       This script is bundled by Astro/Vite, so it loads from your own domain (no CORS issues). -->
+  <script>
+    import netlifyIdentity from "netlify-identity-widget";
+
+    // Init identity
+    netlifyIdentity.init();
+
+    // For debugging (optional): allow window.netlifyIdentity in DevTools
+    window.netlifyIdentity = netlifyIdentity;
+
+    // Open button
+    const btn = document.getElementById("openIdentity");
+    btn?.addEventListener("click", () => netlifyIdentity.open());
+
+    // If user came from invite/confirmation link, auto open
+    const h = location.hash || "";
+    if (h.includes("invite_token") || h.includes("confirmation_token") || h.includes("recovery_token")) {
+      netlifyIdentity.open();
+    }
+  </script>
 </BaseLayout>
