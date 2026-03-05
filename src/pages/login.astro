@@ -1,0 +1,24 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+<BaseLayout title="账号确认/登录">
+  <div class="surface pad">
+    <h1 class="page-title">账号确认 / 登录</h1>
+    <p class="subtle">
+      这个页面用于处理 Netlify Identity 的邀请/邮箱确认/设置密码（只给管理员用）。完成后再去
+      <code class="inline">/admin/</code> 登录 Decap CMS。
+    </p>
+
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+
+    <div style="height:12px;"></div>
+    <button class="btn" type="button" onclick="netlifyIdentity.open()">打开登录窗口</button>
+
+    <div style="height:10px;"></div>
+    <div class="subtle" style="font-size:12px;">
+      若你是从邮件确认链接进入，地址栏可能带 <code class="inline">#invite_token=...</code> 或
+      <code class="inline">#confirmation_token=...</code>。请确保它出现在本页路径下，例如：
+      <code class="inline">/login/#invite_token=...</code>，这样弹窗才能正确完成确认/设置密码。
+    </div>
+  </div>
+</BaseLayout>

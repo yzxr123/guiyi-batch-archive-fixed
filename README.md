@@ -84,3 +84,35 @@ npm run dev
 
 - YAML 前言中的 `YYYY-MM-DD` 在某些解析器下会被当作 Date 对象；本项目已在 content schema 中兼容 string/Date。
 - `proofStatement / techNotes / evidence.body` 使用 Markdown 编写，页面通过 `marked` 渲染为 HTML。
+
+---
+
+## 🔄 重新开始（清空旧配置）— Netlify 上操作
+
+> 适用于你之前把 Identity / Git Gateway / 用户 / 邀请搞乱了，想“一次清干净再来”。
+
+### 1) Netlify：删除旧 Identity 实例（会清空所有 Identity 用户）
+Netlify 站点控制台：
+- Project configuration → Identity
+- 拉到最下面 **Danger zone**
+- 点击 **Delete Identity instance**
+
+### 2) Netlify：重新启用 Identity + Git Gateway
+- Project configuration → Identity → 重新启用
+- Identity → Registration：建议改成 **Invite only**
+- Identity → Services → **Enable Git Gateway**
+
+### 3) 站点里两个入口的区别（非常重要）
+- **/admin/**：Decap CMS（只负责“内容管理”，不负责邮箱确认）
+- **/login/**：Netlify Identity Widget（只用于“邀请/确认邮箱/设置密码/首次激活”）
+
+⚠️ 不要把登录页放在 /admin/ 下面（例如 /admin/login），否则会与 CMS 的路由冲突导致 config.yml 加载失败。
+
+### 4) 正确的首次激活流程（不会再遇到 Email not confirmed）
+1. Identity → Invite users → 邀请你的邮箱
+2. 打开邮件链接后，如果地址栏带 token（例如 `#invite_token=...`）
+   - 把它放到本站的 **/login/** 下：
+   - 例如：`https://你的域名/login/#invite_token=...`
+3. 在弹窗里设置密码/完成确认
+4. 然后访问：`https://你的域名/admin/` 用邮箱+密码登录 CMS
+
