@@ -1,6 +1,9 @@
 backend:
-  name: git-gateway
+  name: github
+  repo: yzxr123/guiyi-batch-archive-fixed
   branch: main
+  base_url: https://api.netlify.com
+  auth_endpoint: auth
 
 # Local dev helper (optional). Netlify Dev can enable this.
 local_backend: true
