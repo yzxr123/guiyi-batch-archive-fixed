@@ -1,0 +1,84 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import { uniq, dateKey, formatDate } from "../../lib/helpers";
+
+const projects = (await getCollection("projects"))
+  .filter(p => p.data.isPublic)
+  .sort((a,b) => dateKey(b.data.updated).localeCompare(dateKey(a.data.updated)));
+
+const studios = (await getCollection("studios")).filter(s=>s.data.isPublic);
+const studioMap = new Map(studios.map(s => [s.slug, s.data.name]));
+
+const tags = uniq(projects.flatMap(p => p.data.tags || [])).sort((a,b)=>a.localeCompare(b,"zh"));
+const types = uniq(projects.map(p => p.data.type).filter(Boolean)).sort((a,b)=>String(a).localeCompare(String(b),"zh"));
+---
+<BaseLayout title="作品">
+  <h1 class="page-title">全联盟作品原创记录</h1>
+  <p class="subtle">搜索与筛选全联盟公开作品记录。仅展示记录，不提供下载。</p>
+
+  <div class="surface pad" style="margin-top:14px;">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <input id="q" class="input" placeholder="搜索作品名称/摘要/标签…" style="max-width:520px;" />
+      <select id="type" class="input" style="max-width:220px;">
+        <option value="">全部类型</option>
+        {types.map(t => <option value={String(t)}>{String(t)}</option>)}
+      </select>
+      <select id="tag" class="input" style="max-width:220px;">
+        <option value="">全部标签</option>
+        {tags.map(t => <option value={t}>{t}</option>)}
+      </select>
+      <span class="badge"><span id="count"></span> 个匹配</span>
+    </div>
+
+    <div style="height:14px;"></div>
+
+    <div class="grid cols-2" id="grid">
+      {projects.map((p) => (
+        <a class="card" href={`/p/${p.slug}/`} style="display:block;"
+           data-title={p.data.title}
+           data-summary={p.data.summary}
+           data-tags={(p.data.tags || []).join(",")}
+           data-type={p.data.type || ""}>
+          <h3 style="margin-bottom:6px;">{p.data.title}</h3>
+          <p>{p.data.summary}</p>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <span class="badge">更新 {formatDate(p.data.updated)}</span>
+            <span class="badge">工作室：{studioMap.get(p.data.studio) || p.data.studio}</span>
+            {p.data.type ? <span class="badge">{p.data.type}</span> : null}
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+
+  <script is:inline>
+    const q = document.getElementById("q");
+    const tag = document.getElementById("tag");
+    const type = document.getElementById("type");
+    const cards = Array.from(document.querySelectorAll("#grid a.card"));
+    const count = document.getElementById("count");
+
+    function apply(){
+      const kw = (q.value || "").trim().toLowerCase();
+      const tv = (tag.value || "").trim();
+      const ty = (type.value || "").trim();
+      let n = 0;
+      for(const el of cards){
+        const hay = ((el.dataset.title || "") + " " + (el.dataset.summary || "") + " " + (el.dataset.tags || "")).toLowerCase();
+        const tags = (el.dataset.tags || "").split(",").map(s=>s.trim()).filter(Boolean);
+        const okKw = !kw || hay.includes(kw);
+        const okTag = !tv || tags.includes(tv);
+        const okType = !ty || (el.dataset.type || "") === ty;
+        const ok = okKw && okTag && okType;
+        el.style.display = ok ? "block" : "none";
+        if(ok) n++;
+      }
+      count.textContent = String(n);
+    }
+    q.addEventListener("input", apply);
+    tag.addEventListener("change", apply);
+    type.addEventListener("change", apply);
+    apply();
+  </script>
+</BaseLayout>

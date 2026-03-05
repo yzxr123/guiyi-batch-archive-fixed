@@ -1,0 +1,86 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getEntry, getCollection } from "astro:content";
+
+const site = await getEntry("site", "settings");
+const studios = (await getCollection("studios"))
+  .filter(s => s.data.isPublic)
+  .sort((a,b) => (a.data.order ?? 100) - (b.data.order ?? 100) || a.data.name.localeCompare(b.data.name, "zh"));
+
+import { dateKey, formatDate } from "../lib/helpers";
+
+const projects = (await getCollection("projects"))
+  .filter(p => p.data.isPublic)
+  .sort((a,b) => dateKey(b.data.updated).localeCompare(dateKey(a.data.updated)));
+
+const latest = projects.slice(0, 6);
+---
+<BaseLayout title="首页">
+  <h1 class="page-title">{site.data.allianceName} · {site.data.slogan}</h1>
+  <p class="subtle">{site.data.intro}</p>
+
+  <hr class="sep" />
+
+  <section class="two-col">
+    <div>
+      <div class="surface pad">
+        <h2 style="margin:0 0 10px 0;">联盟能力概览</h2>
+        <div class="grid cols-2">
+          {site.data.capabilities.map((c) => (
+            <div class="card">
+              <h3>{c.title}</h3>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                {c.items.map((it) => <span class="badge">{it}</span>)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style="height:14px;"></div>
+
+      <div class="surface pad">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;">
+          <h2 style="margin:0;">加盟工作室</h2>
+          <a href="/studios" class="badge">查看全部</a>
+        </div>
+        <div style="height:10px;"></div>
+        <div class="grid cols-3" id="studioGrid">
+          {studios.map((s) => (
+            <a class="card" href={`/studio/${s.slug}/`} style="display:block;">
+              <h3 style="margin-bottom:6px;">{s.data.name}</h3>
+              <p>{s.data.focus}</p>
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <div class="surface pad">
+        <h2 style="margin:0 0 8px 0;">最近更新</h2>
+        <p class="subtle" style="margin:0 0 12px 0;">最近更新/发布的原创记录（仅展示记录，不提供下载）。</p>
+
+        <table class="table" style="border:1px solid var(--border);border-radius:12px;">
+          <thead>
+            <tr>
+              <th style="width:110px;">更新</th>
+              <th>作品</th>
+            </tr>
+          </thead>
+          <tbody>
+            {latest.map((p) => (
+              <tr>
+                <td><span class="tl-date">{formatDate(p.data.updated)}</span></td>
+                <td>
+                  <a href={`/p/${p.slug}/`} style="font-weight:650;">{p.data.title}</a>
+                  <div class="subtle" style="font-size:12px;margin-top:2px;">{p.data.summary}</div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </aside>
+  </section>
+</BaseLayout>

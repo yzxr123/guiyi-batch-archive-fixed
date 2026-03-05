@@ -1,0 +1,37 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getEntry } from "astro:content";
+
+const site = await getEntry("site", "settings");
+---
+<BaseLayout title="关于联盟">
+  <h1 class="page-title">关于 {site.data.allianceName}</h1>
+
+  <div class="surface pad prose">
+    <p>
+      {site.data.allianceName} 是一个面向内容生产与工程效率的开发联盟，核心方向是“批量生成、批量归一化、批量验证”的工具体系建设。
+      联盟覆盖多平台开发环境，擅长将复杂制作流程模块化、参数化，并通过工具链实现规模化产出与一致性管理。
+    </p>
+
+    <h2>本站用途</h2>
+    <p>
+      本站作为联盟的公开记录库，为加盟工作室的作品提供原创记录页面，展示开发过程、迭代节点与证据材料（图片与文字）。
+      <strong>本站仅用于记录展示与证明，不提供任何作品文件下载。</strong>
+    </p>
+
+    <h2>联盟能力</h2>
+    {site.data.capabilities.map((c) => (
+      <div style="margin-bottom:14px;">
+        <h3 style="margin:0 0 8px 0;">{c.title}</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          {c.items.map((it) => <span class="badge">{it}</span>)}
+        </div>
+      </div>
+    ))}
+
+    <h2>声明</h2>
+    <blockquote>
+      站内展示的“证据材料”用于说明创作过程与归属，任何内容均不作为作品文件分发渠道。若需授权或合作，请通过联盟内部渠道联系管理员。
+    </blockquote>
+  </div>
+</BaseLayout>

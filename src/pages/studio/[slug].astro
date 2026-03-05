@@ -1,0 +1,106 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import { uniq, dateKey, formatDate } from "../../lib/helpers";
+
+export async function getStaticPaths() {
+  const studios = await getCollection("studios");
+  return studios.map((s) => ({ params: { slug: s.slug } }));
+}
+
+const { slug } = Astro.params;
+const studios = await getCollection("studios");
+const studio = studios.find(s => s.slug === slug);
+
+if (!studio || !studio.data.isPublic) {
+  return Astro.redirect("/studios");
+}
+
+const projects = (await getCollection("projects"))
+  .filter(p => p.data.isPublic && p.data.studio === slug)
+  .sort((a,b) => dateKey(b.data.updated).localeCompare(dateKey(a.data.updated)));
+
+const tags = uniq(projects.flatMap(p => p.data.tags || [])).sort((a,b)=>a.localeCompare(b, "zh"));
+---
+<BaseLayout title={studio.data.name}>
+  <h1 class="page-title">{studio.data.name}</h1>
+  <p class="subtle">{studio.data.focus}</p>
+
+  <div class="two-col" style="margin-top:14px;">
+    <div class="surface pad">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <h2 style="margin:0;">作品原创记录</h2>
+        <span class="badge">{projects.length} 个作品</span>
+      </div>
+
+      <div style="height:12px;"></div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <input id="q" class="input" placeholder="搜索作品名称/摘要/标签…" style="max-width:520px;" />
+        <select id="tag" class="input" style="max-width:220px;">
+          <option value="">全部标签</option>
+          {tags.map(t => <option value={t}>{t}</option>)}
+        </select>
+        <span class="badge"><span id="count"></span> 个匹配</span>
+      </div>
+
+      <div style="height:14px;"></div>
+
+      <div class="grid cols-2" id="grid">
+        {projects.map((p) => (
+          <a class="card" href={`/p/${p.slug}/`} style="display:block;"
+             data-title={p.data.title}
+             data-summary={p.data.summary}
+             data-tags={(p.data.tags || []).join(",")}>
+            <h3 style="margin-bottom:6px;">{p.data.title}</h3>
+            <p>{p.data.summary}</p>
+            <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <span class="badge">更新 {formatDate(p.data.updated)}</span>
+              {p.data.type ? <span class="badge">{p.data.type}</span> : null}
+              {(p.data.tags || []).slice(0,4).map(t => <span class="badge">{t}</span>)}
+            </div>
+          </a>
+        ))}
+      </div>
+
+      {projects.length === 0 ? <p class="subtle">该工作室暂无公开作品记录。</p> : null}
+    </div>
+
+    <aside class="sidebar">
+      <div class="surface pad">
+        <h2 style="margin:0 0 8px 0;">提示</h2>
+        <ul style="margin:0;padding-left:18px;color:var(--text-muted);">
+          <li>本站仅展示原创记录与证据（图片与文字）。</li>
+          <li>不提供任何作品文件下载链接。</li>
+          <li>作品页支持通过固定链接（slug）直达。</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <script is:inline>
+    const q = document.getElementById("q");
+    const tag = document.getElementById("tag");
+    const cards = Array.from(document.querySelectorAll("#grid a.card"));
+    const count = document.getElementById("count");
+
+    function apply(){
+      const kw = (q.value || "").trim().toLowerCase();
+      const tv = (tag.value || "").trim();
+      let n = 0;
+      for(const el of cards){
+        const hay = ((el.dataset.title || "") + " " + (el.dataset.summary || "") + " " + (el.dataset.tags || "")).toLowerCase();
+        const tags = (el.dataset.tags || "").split(",").map(s=>s.trim()).filter(Boolean);
+        const okKw = !kw || hay.includes(kw);
+        const okTag = !tv || tags.includes(tv);
+        const ok = okKw && okTag;
+        el.style.display = ok ? "block" : "none";
+        if(ok) n++;
+      }
+      count.textContent = String(n);
+    }
+    q.addEventListener("input", apply);
+    tag.addEventListener("change", apply);
+    apply();
+  </script>
+</BaseLayout>

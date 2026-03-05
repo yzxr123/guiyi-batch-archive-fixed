@@ -1,0 +1,216 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import { groupBy, dateKey, formatDate } from "../../lib/helpers";
+import { marked } from "marked";
+
+export async function getStaticPaths() {
+  const projects = await getCollection("projects");
+  return projects.map((p) => ({ params: { slug: p.slug } }));
+}
+
+const { slug } = Astro.params;
+const projects = await getCollection("projects");
+const studios = await getCollection("studios");
+
+const project = projects.find(p => p.slug === slug);
+if (!project || !project.data.isPublic) {
+  return Astro.redirect("/projects");
+}
+
+const studio = studios.find(s => s.slug === project.data.studio);
+
+const evidence = [...(project.data.evidence || [])]
+  .sort((a,b) => dateKey(b.date).localeCompare(dateKey(a.date)));
+
+const groups = groupBy(evidence, "group");
+const groupNames = Array.from(groups.keys()).sort((a,b)=>a.localeCompare(b,"zh"));
+
+const imageEvidence = evidence.filter(e => e.kind === "image" && e.image);
+const textEvidence = evidence.filter(e => e.kind === "text");
+---
+<BaseLayout title={project.data.title}>
+  <div class="two-col">
+    <div>
+      <h1 class="page-title">{project.data.title}</h1>
+      <p class="subtle">{project.data.summary}</p>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0 0 0;">
+        {project.data.type ? <span class="badge">{project.data.type}</span> : null}
+        <span class="badge">首次记录 {formatDate(project.data.created)}</span>
+        <span class="badge">最后更新 {formatDate(project.data.updated)}</span>
+        {studio ? <a class="badge" href={`/studio/${studio.slug}/`}>工作室：{studio.data.name}</a> : <span class="badge">工作室：{project.data.studio}</span>}
+        {(project.data.tags || []).map(t => <span class="badge">{t}</span>)}
+      </div>
+
+      <div style="height:14px;"></div>
+
+      <div class="surface pad prose">
+        <h2 style="margin-top:0;">原创声明</h2>
+        <div set:html={marked.parse(project.data.proofStatement)} />
+
+        {project.data.techNotes ? (
+          <>
+            <hr class="sep" />
+            <h2>技术说明</h2>
+            <div set:html={marked.parse(project.data.techNotes)} />
+          </>
+        ) : null}
+      </div>
+
+      <div style="height:14px;"></div>
+
+      <div class="surface pad">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+          <h2 style="margin:0;">证据与过程记录</h2>
+          <span class="badge">图片 {imageEvidence.length} · 文字 {textEvidence.length}</span>
+        </div>
+        <p class="subtle" style="margin:6px 0 0 0;">仅展示记录与证据（图片/文字），不提供下载链接。</p>
+
+        {imageEvidence.length > 0 ? (
+          <>
+            <h3 style="margin:14px 0 10px 0;">图片证据</h3>
+            <div class="gallery" id="gallery">
+              {imageEvidence.map((e, idx) => (
+                <button class="thumb" type="button"
+                        data-src={e.image}
+                        data-title={e.title || ""}
+                        data-date={formatDate(e.date)}
+                        style="all:unset;cursor:pointer;display:block;">
+                  <div class="thumb">
+                    <img src={e.image} alt={e.title || "证据图片"} loading="lazy" />
+                    <div class="cap">
+                      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;">
+                        <span>{e.title || "未命名"}</span>
+                        <span class="tl-date">{formatDate(e.date)}</span>
+                      </div>
+                      {e.note ? <div style="margin-top:6px;">{e.note}</div> : null}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </>
+        ) : null}
+
+        {evidence.length > 0 ? (
+          <>
+            <h3 style="margin:16px 0 10px 0;">时间线</h3>
+            <div class="timeline">
+              {evidence.map((e) => (
+                <div class="tl-item">
+                  <div class="tl-head">
+                    <span class="tl-date">{formatDate(e.date)}</span>
+                    <span class="badge">{e.group}</span>
+                    <span class="tl-title">{e.title || (e.kind === "image" ? "图片记录" : "文字记录")}</span>
+                  </div>
+                  {e.note ? <div class="tl-note">{e.note}</div> : null}
+                  {e.kind === "text" && e.body ? (
+                    <div class="tl-note" style="margin-top:10px;">
+                      <div class="surface pad prose" style="padding:12px;">
+                        <div set:html={marked.parse(e.body)} />
+                      </div>
+                    </div>
+                  ) : null}
+                  {e.kind === "image" && e.image ? (
+                    <div style="margin-top:10px;">
+                      <img src={e.image} alt={e.title || "证据图片"} style="width:100%;max-height:420px;object-fit:cover;border:1px solid var(--border);border-radius:12px;" loading="lazy" />
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p class="subtle" style="margin-top:12px;">暂无证据记录。请在后台为该作品添加图片/文字证据。</p>
+        )}
+
+        <dialog class="viewer" id="viewer">
+          <div class="viewer-head">
+            <div style="display:flex;gap:10px;align-items:center;">
+              <strong id="viewerTitle">证据预览</strong>
+              <span class="tl-date" id="viewerDate"></span>
+            </div>
+            <button class="btn" id="viewerClose" type="button">关闭</button>
+          </div>
+          <div class="viewer-body">
+            <img id="viewerImg" alt="证据图片预览" />
+          </div>
+        </dialog>
+
+        <script is:inline>
+          const dialog = document.getElementById("viewer");
+          const img = document.getElementById("viewerImg");
+          const title = document.getElementById("viewerTitle");
+          const date = document.getElementById("viewerDate");
+          const closeBtn = document.getElementById("viewerClose");
+
+          function openViewer(src, t, d){
+            img.src = src;
+            title.textContent = t || "证据预览";
+            date.textContent = d || "";
+            if(typeof dialog.showModal === "function") dialog.showModal();
+            else dialog.setAttribute("open", "true");
+          }
+          function closeViewer(){
+            if(typeof dialog.close === "function") dialog.close();
+            else dialog.removeAttribute("open");
+          }
+
+          closeBtn?.addEventListener("click", closeViewer);
+          dialog?.addEventListener("click", (e) => {
+            if(e.target === dialog) closeViewer();
+          });
+
+          document.querySelectorAll("#gallery [data-src]").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              openViewer(btn.dataset.src, btn.dataset.title, btn.dataset.date);
+            });
+          });
+
+          // Optional: record a view count (non-blocking)
+          (async () => {
+            try {
+              const res = await fetch(`/.netlify/functions/views?slug=${encodeURIComponent("${slug}")}`, { method: "POST" });
+              if(!res.ok) return;
+              const data = await res.json();
+              const el = document.getElementById("viewCount");
+              if(el && typeof data.views === "number") el.textContent = String(data.views);
+            } catch {}
+          })();
+        </script>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <div class="surface pad">
+        <h2 style="margin:0 0 10px 0;">作品信息</h2>
+        <div style="display:grid;gap:10px;">
+          <div>
+            <div class="subtle" style="font-size:12px;">所属工作室</div>
+            <div style="font-weight:650;">{studio ? studio.data.name : project.data.studio}</div>
+          </div>
+          <div>
+            <div class="subtle" style="font-size:12px;">记录范围</div>
+            <div>仅展示记录与证据（图片/文字）</div>
+          </div>
+          <div>
+            <div class="subtle" style="font-size:12px;">阅读次数（可选）</div>
+            <div><span id="viewCount">—</span></div>
+          </div>
+          <div>
+            <div class="subtle" style="font-size:12px;">直达链接</div>
+            <div><code class="inline">/p/{slug}/</code></div>
+          </div>
+          <div>
+            <a class="btn" href="/projects">返回作品列表</a>
+          </div>
+        </div>
+        <hr class="sep" />
+        <div class="subtle" style="font-size:12px;">
+          说明：本站不提供任何下载按钮或下载链接。图片仅用于在线预览与证据展示。
+        </div>
+      </div>
+    </aside>
+  </div>
+</BaseLayout>

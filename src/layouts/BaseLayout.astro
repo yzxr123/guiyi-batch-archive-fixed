@@ -1,0 +1,58 @@
+---
+import "../styles/global.css";
+import { getEntry } from "astro:content";
+
+const site = await getEntry("site", "settings");
+const currentPath = Astro.url.pathname;
+
+const nav = [
+  { href: "/", label: "首页" },
+  { href: "/studios", label: "工作室" },
+  { href: "/projects", label: "作品" },
+  { href: "/about", label: "关于联盟" },
+];
+---
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0d1117" />
+    <title>{Astro.props.title ? `${Astro.props.title} · ${site.data.allianceName}` : `${site.data.allianceName} · ${site.data.slogan}`}</title>
+    <meta name="description" content={site.data.intro} />
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-inner">
+        <a class="brand" href="/" aria-label="返回首页">
+          <img src={site.data.logoPath} alt="归一批量联盟 Logo" />
+          <div class="brand-title">
+            <div class="name">{site.data.allianceName}</div>
+            <div class="slogan">{site.data.slogan}</div>
+          </div>
+        </a>
+
+        <nav class="nav" aria-label="主导航">
+          {nav.map((item) => {
+            const isCurrent = currentPath === item.href || (item.href !== "/" && currentPath.startsWith(item.href));
+            return (
+              <a href={item.href} aria-current={isCurrent ? "page" : undefined}>
+                {item.label}
+              </a>
+            );
+          })}
+          <a href="/admin/" class="btn" style="padding:6px 10px;font-size:12px;" aria-label="后台管理（需要登录）">后台</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <slot />
+      <footer class="footer">
+        <div>© {new Date().getFullYear()} {site.data.allianceName} · {site.data.slogan}</div>
+        <div>本站仅用于展示原创记录与证据（图片与文字），不提供任何作品文件下载。</div>
+      </footer>
+    </main>
+  </body>
+</html>

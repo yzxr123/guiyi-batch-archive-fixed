@@ -1,0 +1,49 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+
+const studios = (await getCollection("studios"))
+  .filter(s => s.data.isPublic)
+  .sort((a,b) => (a.data.order ?? 100) - (b.data.order ?? 100) || a.data.name.localeCompare(b.data.name, "zh"));
+---
+<BaseLayout title="工作室">
+  <h1 class="page-title">加盟工作室</h1>
+  <p class="subtle">仅展示工作室名称与其主要面对方向；不公开联系方式与代表作信息。</p>
+
+  <div class="surface pad" style="margin-top:14px;">
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <input id="q" class="input" placeholder="搜索工作室名称或方向…" style="max-width:520px;" />
+      <span class="badge"><span id="count"></span> 个工作室</span>
+    </div>
+
+    <div style="height:14px;"></div>
+
+    <div class="grid cols-3" id="grid">
+      {studios.map((s) => (
+        <a class="card" href={`/studio/${s.slug}/`} data-name={s.data.name} data-focus={s.data.focus} style="display:block;">
+          <h3 style="margin-bottom:6px;">{s.data.name}</h3>
+          <p>{s.data.focus}</p>
+        </a>
+      ))}
+    </div>
+  </div>
+
+  <script is:inline>
+    const q = document.getElementById("q");
+    const cards = Array.from(document.querySelectorAll("#grid a.card"));
+    const count = document.getElementById("count");
+    function apply(){
+      const kw = (q.value || "").trim().toLowerCase();
+      let n = 0;
+      for(const el of cards){
+        const hay = ((el.dataset.name || "") + " " + (el.dataset.focus || "")).toLowerCase();
+        const ok = !kw || hay.includes(kw);
+        el.style.display = ok ? "block" : "none";
+        if(ok) n++;
+      }
+      count.textContent = String(n);
+    }
+    q.addEventListener("input", apply);
+    apply();
+  </script>
+</BaseLayout>

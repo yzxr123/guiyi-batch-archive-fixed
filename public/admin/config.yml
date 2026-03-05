@@ -1,0 +1,96 @@
+backend:
+  name: git-gateway
+  branch: main
+
+# Local dev helper (optional). Netlify Dev can enable this.
+local_backend: true
+
+media_folder: "public/uploads"
+public_folder: "/uploads"
+
+site_url: "/"
+display_url: "/"
+
+locale: "zh_Hans"
+publish_mode: editorial_workflow
+
+collections:
+  - name: "site"
+    label: "站点设置"
+    files:
+      - name: "settings"
+        label: "联盟信息"
+        file: "src/content/site/settings.json"
+        format: "json"
+        fields:
+          - { label: "联盟名称", name: "allianceName", widget: "string", default: "归一批量" }
+          - { label: "Slogan", name: "slogan", widget: "string", default: "作品原创证明档案库" }
+          - { label: "联盟简介", name: "intro", widget: "text" }
+          - label: "联盟能力（列表）"
+            name: "capabilities"
+            widget: "list"
+            summary: "{{fields.title}}"
+            fields:
+              - { label: "分组标题", name: "title", widget: "string" }
+              - label: "条目"
+                name: "items"
+                widget: "list"
+                field: { label: "内容", name: "item", widget: "string" }
+          - { label: "Logo 路径（一般不改）", name: "logoPath", widget: "string", default: "/assets/logo.png" }
+
+  - name: "studios"
+    label: "工作室"
+    label_singular: "工作室"
+    folder: "src/content/studios"
+    create: true
+    slug: "{{slug}}"
+    format: "frontmatter"
+    extension: "md"
+    fields:
+      - { label: "工作室名称", name: "name", widget: "string" }
+      - { label: "主要面对什么", name: "focus", widget: "string" }
+      - { label: "排序（数字越小越靠前）", name: "order", widget: "number", value_type: "int", default: 100 }
+      - { label: "是否公开", name: "isPublic", widget: "boolean", default: true }
+      - { label: "正文（可留空，不对外展示）", name: "body", widget: "markdown", required: false }
+
+  - name: "projects"
+    label: "作品原创记录"
+    label_singular: "作品"
+    folder: "src/content/projects"
+    create: true
+    slug: "{{slug}}"
+    format: "frontmatter"
+    extension: "md"
+    fields:
+      - { label: "作品名称", name: "title", widget: "string" }
+      - { label: "所属工作室（填工作室文件名 slug）", name: "studio", widget: "string" }
+      - { label: "作品类型（可选）", name: "type", widget: "string", required: false }
+      - { label: "摘要（1-2句）", name: "summary", widget: "text" }
+      - { label: "标签", name: "tags", widget: "list", required: false }
+      - { label: "首次记录日期（YYYY-MM-DD）", name: "created", widget: "datetime", format: "YYYY-MM-DD", time_format: false }
+      - { label: "最后更新日期（YYYY-MM-DD）", name: "updated", widget: "datetime", format: "YYYY-MM-DD", time_format: false }
+      - { label: "是否公开", name: "isPublic", widget: "boolean", default: true }
+      - { label: "置顶（可选）", name: "pinned", widget: "boolean", default: false }
+
+      - { label: "原创声明", name: "proofStatement", widget: "markdown" }
+      - { label: "技术说明（README风）", name: "techNotes", widget: "markdown", required: false }
+
+      - label: "证据记录（图片/文字）"
+        name: "evidence"
+        widget: "list"
+        required: false
+        summary: "[{{fields.date}}] {{fields.group}} - {{fields.title}}"
+        fields:
+          - label: "类型"
+            name: "kind"
+            widget: "select"
+            options: ["image", "text"]
+            default: "image"
+          - { label: "日期（YYYY-MM-DD）", name: "date", widget: "datetime", format: "YYYY-MM-DD", time_format: false }
+          - { label: "分组（如：设计/迭代/日志/效果）", name: "group", widget: "string" }
+          - { label: "标题（可选）", name: "title", widget: "string", required: false }
+          - { label: "说明文字（可选）", name: "note", widget: "text", required: false }
+          - { label: "图片（当类型=image时使用）", name: "image", widget: "image", required: false }
+          - { label: "正文（当类型=text时使用）", name: "body", widget: "markdown", required: false }
+
+      - { label: "正文（可留空：不对外展示或作为补充）", name: "body", widget: "markdown", required: false }
