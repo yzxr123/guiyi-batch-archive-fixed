@@ -1,7 +1,7 @@
 ---
-name: 示例工作室
-focus: 批量生成工具与归一化工具链
-order: 10
+name: 方梦工坊
+focus: 批量光影、材质的分发
+order: 4
 isPublic: true
 ---
 
