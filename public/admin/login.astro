@@ -1,0 +1,32 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+<BaseLayout title="后台登录">
+  <div class="surface pad">
+    <h1 class="page-title">后台登录 / Admin Login</h1>
+    <p class="subtle">此页面仅用于联盟管理员登录 Netlify Identity（创建/登录账号后，可直接进入 /admin/ 使用 Decap CMS）。</p>
+
+    <!-- Netlify Identity Widget -->
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+
+    <div style="height:12px;"></div>
+    <button class="btn" type="button" onclick="netlifyIdentity.open()">打开登录/注册窗口</button>
+
+    <hr class="sep" />
+
+    <div class="subtle" style="font-size:12px;">
+      登录后访问：<code class="inline">/admin/</code>（Decap CMS）
+    </div>
+
+    <script is:inline>
+      if (window.netlifyIdentity) {
+        window.netlifyIdentity.on("init", user => {
+          if (!user) {
+            // Optional: auto-open the login modal for first-time setup
+            // window.netlifyIdentity.open();
+          }
+        });
+      }
+    </script>
+  </div>
+</BaseLayout>
